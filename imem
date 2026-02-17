@@ -1,0 +1,48 @@
+`timescale 1ns/1ps
+module imem (
+    input  wire [31:0] pc,
+    output wire [31:0] inst
+);
+
+    reg [31:0] imem [0:255];
+    integer i;
+
+    initial begin
+        // ---------- Default NOP ----------
+        for (i = 0; i < 256; i = i + 1)
+            imem[i] = 32'h00000013; // addi x0, x0, 0
+
+        // ---------- Basic arithmetic ----------
+        imem[0] = 32'h00A00093; // addi x1, x0, 10
+        imem[1] = 32'h00200113; // addi x2, x0, 2
+
+        // ---------- XOR ----------
+        imem[2] = 32'h0020C1B3; // xor x3, x1, x2
+
+        // ---------- Shift left ----------
+        imem[3] = 32'h002192B3; // sll x3, x3, x2
+
+        // ---------- Shift right logical ----------
+        imem[4] = 32'h0021D2B3; // srl x3, x3, x2
+
+        // ---------- SLT (FIXED) ----------
+        imem[5] = 32'h00112233; // ❌ WRONG
+        imem[5] = 32'h001122B3; // ✔ slt x5, x2, x1
+
+        // ---------- JAL ----------
+        imem[6] = 32'h008002EF; // jal x5, +8 bytes (skip 2 instructions)
+
+        // ---------- Skipped ----------
+        imem[7] = 32'h00108093; // addi x1, x1, 1 (SKIPPED)
+
+        // ---------- After jump ----------
+        imem[8] = 32'h00508093; // addi x1, x1, 5
+
+        // ---------- JALR ----------
+        imem[9] = 32'h00028067; // jalr x0, x5, 0
+    end
+
+    // PC is byte-addressed → divide by 4
+    assign inst = imem[pc[9:2]];
+
+endmodule
